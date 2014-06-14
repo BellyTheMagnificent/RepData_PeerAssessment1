@@ -55,9 +55,36 @@ The median is `r medianSteps`.
 
 ## What is the average daily activity pattern?
 
+To view the average daily activity pattern, first have to create a aggregate data set.
+```{r}
+aggByInterval = aggregate(steps ~ interval, data = activity, mean)
+str(aggByInterval)
+```
+Then we can plot the data using ggplot2. 
+```{r, fig.width=10}
+library(ggplot2)
+ggplot(aggByInterval, aes(interval,steps), title="average number of steps taken") + geom_line() + labs(title = "Average number of steps taken on particular interval")
+```
+
+### Which 5-minute interval have highest steps count? Let's find out.
+```{r}
+aggByInterval[which.max(aggByInterval$steps),]
+```
+
+#### The interval 835 has the highest number of average steps per day.  
+We can convert this interval to time to check the exact period about it.
+```{r}
+datetime = as.character(strptime("2010-01-01 00:00:00","%Y-%m-%d %H:%M:%S", tz="GMT")+ 835 * 60,"%I:%M %p")
+```
+The time for this interval is `r datetime`.  
 
 
 ## Imputing missing values
+The data set is not completed. There are some rows do not have steps recorded.
+```{r}
+summary(activity$steps)
+```
+Base on the summary above, we found there is `r summary(activity$steps)[7]` records are having NA as the values for steps column.
 
 
 

@@ -72,9 +72,66 @@ The median is 10395.
 
 ## What is the average daily activity pattern?
 
+To view the average daily activity pattern, first have to create a aggregate data set.
+
+```r
+aggByInterval = aggregate(steps ~ interval, data = activity, mean)
+str(aggByInterval)
+```
+
+```
+## 'data.frame':	288 obs. of  2 variables:
+##  $ interval: int  0 5 10 15 20 25 30 35 40 45 ...
+##  $ steps   : num  1.717 0.3396 0.1321 0.1509 0.0755 ...
+```
+
+Then we can plot the data using ggplot2. 
+
+```r
+library(ggplot2)
+ggplot(aggByInterval, aes(interval, steps), title = "average number of steps taken") + 
+    geom_line() + labs(title = "Average number of steps taken on particular interval")
+```
+
+![plot of chunk unnamed-chunk-8](figure/unnamed-chunk-8.png) 
+
+
+### Which 5-minute interval have highest steps count? Let's find out.
+
+```r
+aggByInterval[which.max(aggByInterval$steps), ]
+```
+
+```
+##     interval steps
+## 104      835 206.2
+```
+
+
+#### The interval 835 has the highest number of average steps per day.  
+We can convert this interval to time to check the exact period about it.
+
+```r
+datetime = as.character(strptime("2010-01-01 00:00:00", "%Y-%m-%d %H:%M:%S", 
+    tz = "GMT") + 835 * 60, "%I:%M %p")
+```
+
+The time for this interval is 01:55 PM.  
 
 
 ## Imputing missing values
+The data set is not completed. There are some rows do not have steps recorded.
+
+```r
+summary(activity$steps)
+```
+
+```
+##    Min. 1st Qu.  Median    Mean 3rd Qu.    Max.    NA's 
+##     0.0     0.0     0.0    37.4    12.0   806.0    2304
+```
+
+Base on the summary above, we found there is 2304 records are having NA as the values for steps column.
 
 
 
