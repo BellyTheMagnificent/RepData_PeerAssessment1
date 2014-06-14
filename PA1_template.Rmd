@@ -1,13 +1,57 @@
 # Reproducible Research: Peer Assessment 1
+Author: BellyTheMagnificent  
+[Linkedin](https://www.linkedin.com/pub/lee-chun-wai/24/8/8b6/)    
+Date: 2014-06-14  
 
+## Loading and preprocessing the data  
+Read data from csv file.  
+If the file is not available in the current directory, download from github and unzip it.
+``` {r, echo=TRUE}
+fileName = "activity.csv"
+if(!file.exists(fileName)){
+        url <- "https://github.com/BellyTheMagnificent/RepData_PeerAssessment1/blob/master/activity.zip"
+        zipName <- "activity.zip"
+        download.file(url, zipName, method = "curl")
+        unzip(zipName)
+}
 
-## Loading and preprocessing the data
-
-
+activity <- read.csv(fileName, stringsAsFactors = FALSE)
+```  
+Convert the date to date data type  
+        1.Convert 'date' column to date data type  
+        2.Get weekday name from converted date column  
+        3.Combine date and interval into datetime  
+``` {r}
+activity$date = as.Date(activity$date, "%Y-%m-%d")
+activity$day = as.character(activity$date, '%a')
+activity$datetime= strptime(paste(activity$date, "00:00:00", sep = ' '), "%Y-%m-%d %H:%M:%S",tz="GMT") + activity$interval * 60
+```
+Data frame after prepoccess 
+```{r, echo=FALSE}
+str(activity)
+```
 
 ## What is mean total number of steps taken per day?
+First, let look at the histogram of the total number of steps taken each day. The date with 0 steps due to no data were collected on the particular day.
+``` {r, fig.height=5}
+bplot = barplot(tapply(activity$steps, activity$date, sum, na.rm=T), ylab="Total steps", 
+        xlab = "Date",
+        main = "Steps taken between 2012/10/01 to 2012/11/30",
+        xaxt='n'
+        )
+axis(1, at = bplot, labels = F)
+```
+### Mean
+```{r}
+meanSteps = mean(tapply(activity$steps, activity$date, sum, na.rm=T))
+```
+The mean of the steps taken each day is `r meanSteps`.
 
-
+### Median
+```{r}
+medianSteps = median(tapply(activity$steps, activity$date, sum, na.rm=T))
+```
+The median is `r medianSteps`.  
 
 ## What is the average daily activity pattern?
 
