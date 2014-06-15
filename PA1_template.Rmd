@@ -23,8 +23,8 @@ Convert the date to date data type
         3.Combine date and interval into datetime  
 ``` {r}
 activity$date = as.Date(activity$date, "%Y-%m-%d")
-activity$day = as.character(activity$date, '%a')
-activity$datetime= strptime(paste(activity$date, "00:00:00", sep = ' '), "%Y-%m-%d %H:%M:%S",tz="GMT") + activity$interval * 60
+activity$day = weekdays(activity$date)
+activity$datetime= strptime(paste(activity$date, activity$interval, sep = ' '), "%Y-%m-%d %H%M",tz="GMT")
 ```
 Data frame after prepoccess 
 ```{r, echo=FALSE}
@@ -72,12 +72,6 @@ aggByInterval[which.max(aggByInterval$steps),]
 ```
 
 #### The interval 835 has the highest number of average steps per day.  
-We can convert this interval to time to check the exact period about it.
-```{r}
-datetime = as.character(strptime("2010-01-01 00:00:00","%Y-%m-%d %H:%M:%S", tz="GMT")+ 835 * 60,"%I:%M %p")
-```
-The time for this interval is `r datetime`.  
-
 
 ## Imputing missing values
 The data set is not completed. There are some rows do not have steps recorded.
@@ -86,6 +80,68 @@ summary(activity$steps)
 ```
 Base on the summary above, we found there is `r summary(activity$steps)[7]` records are having NA as the values for steps column.
 
+To fill out the missing values, we will use MICE library to fill the missing data.
+``` {r, message=FALSE}
+library(Rcpp)
+library(mice)
+```
+Let's impute the data using mice package, it could take some time.
+```{r, cache=TRUE, message=FALSE}
+set.seed(123)
+imputecol = setdiff(names(activity),c("date","datetime"))
+imputeset = complete(mice(activity[imputecol]))
+imputeset$date = activity$date
+imputeset$datetime = activity$datetime
+summary(imputeset)
+```
+Now there is no NA value in the 'steps' column. (alternatively, the impute can be done by replacing the missing value with interval mean value).
 
+``` {r, fig.height=5}
+bplot = barplot(tapply(imputeset$steps, imputeset$date, sum, na.rm=T), ylab="Total steps", 
+        xlab = "Date",
+        main = "Steps taken between 2012/10/01 to 2012/11/30 from imputed dataset",
+        xaxt='n'
+        )
+axis(1, at = bplot, labels = F)
+```
+### Mean of imputed data
+```{r}
+meanSteps = mean(tapply(imputeset$steps, imputeset$date, sum, na.rm=T))
+```
+The mean of the steps taken each day is `r meanSteps`.
+
+### Median of imputed data
+```{r}
+medianSteps = median(tapply(imputeset$steps, imputeset$date, sum, na.rm=T))
+```
+The median is `r medianSteps`.  
 
 ## Are there differences in activity patterns between weekdays and weekends?
+First, create the new factor variable in the imputset data frame.
+```{r}
+imputeset$weekEndDay[imputeset$day %in% c("Saturday","Sunday")] = "Weekend"
+imputeset$weekEndDay[which(is.na(imputeset$weekEndDay))] = "Weekday"
+imputeset$weekEndDay = as.factor(imputeset$weekEndDay)
+
+table(imputeset$day, imputeset$weekEndDay)
+
+```
+
+Calculate new aggregate data frame  
+```{r}
+aggByInterval_new = aggregate(steps ~ interval + weekEndDay, data = imputeset, mean)
+str(aggByInterval_new)
+```
+Plot the graph using lattice package  
+```{r, echo=TRUE}
+library(lattice)
+
+ggplot(aggByInterval_new) + 
+        geom_line(aes(x=interval,y=steps), colour="blue") +
+        facet_grid(weekEndDay~.) + 
+        labs(title = "Weekday vs Weekend", x = "Interval", y = "Number of steps")
+```
+
+Comparing the plots, we can see that the total steps taken during
+weekends are, on average, greater than that taken during weekday, particularly around
+midday.
